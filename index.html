@@ -145,6 +145,12 @@
     .source-tag.ia { background: #FFF0E0; color: #7a3a00; }
     .source-tag.as { background: #FFE8F3; color: var(--magenta-dark); }
 
+    .persona-badge { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .persona-trainer { background: var(--purple-light); color: var(--purple-mid); }
+    .persona-user    { background: #FFE8F3; color: var(--magenta-dark); }
+    .persona-both    { background: #E0F7EF; color: var(--green-dark); }
+    .os-tag { font-size: 10px; color: var(--text-muted); display: block; margin-top: 2px; }
+
     .notes-cell { max-width: 200px; font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .link-cell { display: flex; flex-direction: column; gap: 3px; }
     .ext-link { font-size: 11px; font-weight: 600; text-decoration: none; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; width: fit-content; }
@@ -267,6 +273,14 @@
     <button class="filter-pill" data-filter="source" data-value="CS" onclick="setFilter('source','CS',this)">CS</button>
   </div>
   <div class="controls-sep"></div>
+  <span class="filter-section-label">Persona</span>
+  <div class="filter-group">
+    <button class="filter-pill active" data-filter="persona" data-value="all" onclick="setFilter('persona','all',this)">All</button>
+    <button class="filter-pill" data-filter="persona" data-value="Trainer" onclick="setFilter('persona','Trainer',this)">Trainer (T4T)</button>
+    <button class="filter-pill" data-filter="persona" data-value="User" onclick="setFilter('persona','User',this)">User (App)</button>
+    <button class="filter-pill" data-filter="persona" data-value="Both" onclick="setFilter('persona','Both',this)">Both</button>
+  </div>
+  <div class="controls-sep"></div>
   <select class="sort-select" onchange="setSort(this.value)">
     <option value="count-desc">Count ↓</option>
     <option value="count-asc">Count ↑</option>
@@ -290,6 +304,7 @@
           <th onclick="setSort('count-desc')">Count <span class="sort-icon">↕</span></th>
           <th onclick="setSort('date-desc')">Last logged <span class="sort-icon">↕</span></th>
           <th>Sources</th>
+          <th>Platform</th>
           <th onclick="setSort('status')">Status <span class="sort-icon">↕</span></th>
           <th>Notes</th>
           <th>Links</th>
@@ -343,36 +358,37 @@ const THRESHOLD_CS_COUNT = 5;
 const STATUS_ORDER = ['🟡 Logged','🔵 Under Review','🟠 PRD Ready','🟢 In Jira','✅ Shipped','❌ Declined'];
 
 const SEED_DATA = [
-  { id:'FR-001', name:'Weight input via keyboard / quick-repeat previous weight', count:3, firstLogged:'23/06/2023', lastLogged:'06/08/2024', sources:['CX','Service Desk'], status:'🟡 Logged', notes:'Users set weights by scrolling a picker — 30+ times per session. High churn risk. "são mais de 30 vezes que preciso ficar rolando esses pesos... estou cogitando largar o serviço"', renewalSignal:false, jiraLink:'', prdLink:'' },
-  { id:'FR-002', name:'Reorder / skip exercises during workout', count:3, firstLogged:'03/04/2024', lastLogged:'04/07/2024', sources:['CX'], status:'🟢 In Jira', notes:'Members can\'t skip to a different exercise when equipment is busy. Android parity gap vs iOS. "Sometimes equipment is busy at the gym — would be great to change exercise order freely"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2244', prdLink:'https://docs.google.com/document/d/1YfrPVqCzAkKqP8qR3yPbg9A8LIXGUUbzx9G26NwhhJs/edit' },
-  { id:'FR-003', name:'Edit workout after logging (change weight, add notes)', count:1, firstLogged:'15/05/2024', lastLogged:'15/05/2024', sources:['CX'], status:'🟡 Logged', notes:'No way to correct a logged workout after submission. "ability to make adjustments such as changing the weight used in pounds or adding notes post-workout"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-2705', prdLink:'https://docs.google.com/document/d/1jyeJg46WKYYApIg9uTxKizu-t-fXISuQ6IqBRE1XBY8/edit' },
-  { id:'FR-004', name:'Longer workout plans (30+ days, no weekly re-send)', count:3, firstLogged:'27/04/2023', lastLogged:'01/07/2024', sources:['CX'], status:'🟢 In Jira', notes:'Trainers limited to ~2 week plans; users must reconnect weekly. Epic in progress: TRNC-2535. "30 dias seria um ótimo tempo" · "routines limited to 5 weeks — have to resend weekly"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2535', prdLink:'https://docs.google.com/document/d/1kwEslC0KGBd5aD54YVtx2GqvdlxGdMMX3socssldRuU/edit' },
-  { id:'FR-005', name:'Option to disable exercise video autoplay', count:1, firstLogged:'13/06/2024', lastLogged:'13/06/2024', sources:['CX'], status:'🟡 Logged', notes:'Videos autoplay per exercise, making app slow on lower-end devices. "Cada exercício tem um vídeo explicativo que deixa o App extremamente pesado"', renewalSignal:false, jiraLink:'', prdLink:'' },
-  { id:'FR-006', name:'Push notification when trainer uploads new plan', count:1, firstLogged:'29/03/2023', lastLogged:'29/03/2023', sources:['CX'], status:'🟢 In Jira', notes:'Users not notified when trainer assigns a plan. TRNC-2734 (PWA Notifications, In Progress). "User couldn\'t tell if trainer had uploaded plan — no notification was sent"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2734', prdLink:'' },
-  { id:'FR-007', name:'Native exercise demos (replace YouTube links)', count:1, firstLogged:'20/03/2024', lastLogged:'20/03/2024', sources:['CX'], status:'🟡 Logged', notes:'Some demos link out to YouTube, breaking workout flow. "ellos no quieren ver un link de youtube... quieren ver directamente el ejercicio a hacer en la app de Trainiac"', renewalSignal:false, jiraLink:'', prdLink:'' },
-  { id:'FR-008', name:'Exercise library variety / exercise rotation', count:3, firstLogged:'20/03/2024', lastLogged:'16/06/2026', sources:['CX','App Store'], status:'🟡 Logged', notes:'Long-term users see the same exercises repeatedly. "They\'ve had the same exercise library for years. It\'s extremely limited" (GP Jun 9) · "exercises available in the app are very limited" (iOS Jun 16)', renewalSignal:false, jiraLink:'', prdLink:'' },
-  { id:'FR-009', name:'Swimming distance in yards / pool lengths', count:1, firstLogged:'14/07/2023', lastLogged:'14/07/2023', sources:['CX'], status:'🟡 Logged', notes:'Only km and miles supported for swimming. "Why are the only options for swimming to be measured in kilometers or miles? Who has a kilometer-long pool?"', renewalSignal:false, jiraLink:'', prdLink:'' },
-  { id:'FR-010', name:'Trainer availability / rescheduling improvements', count:1, firstLogged:'18/03/2024', lastLogged:'18/03/2024', sources:['CX'], status:'🟡 Logged', notes:'Scheduler creates incorrect exceptions, requiring full resets of availability blocks. System showed exceptions trainer had not set.', renewalSignal:false, jiraLink:'', prdLink:'' },
-  { id:'FR-011', name:'Trainer notes on individual exercises in workout builder', count:1, firstLogged:'11/11/2023', lastLogged:'11/11/2023', sources:['CX'], status:'🟡 Logged', notes:'HIIT builder shows a note prompt per exercise but the field doesn\'t save. "Addition of the trainer\'s note to individual exercises is currently not allowed despite the fact that there is a prompt to do so"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-1598', prdLink:'https://docs.google.com/document/d/1fLPogh9PHd-RjhHac2yqwXCOFMEp5JlzYjDU_MPk_OA/edit' },
-  { id:'FR-012', name:'Bulk exercise selection and editing in workout builder', count:1, firstLogged:'14/12/2024', lastLogged:'14/12/2024', sources:['CX'], status:'🟡 Logged', notes:'Trainers must add and configure exercises one at a time. "Is there a way when building workouts we can add select multiple exercises at the same time and then modify them?"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-4239', prdLink:'https://docs.google.com/document/d/1fLPogh9PHd-RjhHac2yqwXCOFMEp5JlzYjDU_MPk_OA/edit' },
-  { id:'FR-013', name:'Workout program templates', count:1, firstLogged:'27/12/2024', lastLogged:'27/12/2024', sources:['CX'], status:'🟢 In Jira', notes:'Trainers rebuild plans from scratch for each client. Covered by TRNC-2535. "Would like to know if we have a template group option when trying to build exercise programs"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2535', prdLink:'https://docs.google.com/document/d/1kwEslC0KGBd5aD54YVtx2GqvdlxGdMMX3socssldRuU/edit' },
-  { id:'FR-014', name:'Filter / prefer female coaches', count:1, firstLogged:'12/07/2024', lastLogged:'12/07/2024', sources:['CX'], status:'🟡 Logged', notes:'Female users matched with male trainers against preference. No gender filter. "I\'m a woman and don\'t feel comfortable talking with men about my health and fitness"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-3175', prdLink:'https://docs.google.com/document/d/14Ve1QYch6-xtu0BC2ECqE1pSvnYzpQ7Pi6zcQbnoi6I/edit' },
-  { id:'FR-015', name:'Auto-expire / dismiss past-due workouts', count:2, firstLogged:'09/12/2024', lastLogged:'18/06/2026', sources:['CX','App Store'], status:'🟢 In Jira', notes:'Past-due workouts stay pinned at top of list. TRNC-2906. "When a workout passes its scheduled date it stays as the first thing to do" · "I always have to scroll a lot to get to the current day" (GP Jun 18)', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2906', prdLink:'https://docs.google.com/document/d/1YfrPVqCzAkKqP8qR3yPbg9A8LIXGUUbzx9G26NwhhJs/edit' },
-  { id:'FR-016', name:'Option to disable end-of-workout feedback form', count:1, firstLogged:'10/07/2024', lastLogged:'10/07/2024', sources:['CX'], status:'🟡 Logged', notes:'Post-workout survey shown after every session, users find it disruptive. "Please deactivate the feedback function at the end of the training — only the trainer feedback is useful, the rest is just annoying"', renewalSignal:false, jiraLink:'', prdLink:'' },
-  { id:'FR-017', name:'Multi-gym / equipment context per workout', count:1, firstLogged:'10/07/2024', lastLogged:'10/07/2024', sources:['CX'], status:'🟡 Logged', notes:'Users training at 2+ gyms need weight suggestions tailored to each location\'s equipment. "I go to 2 different gyms — the difference between weights on the abdominal machine is extremely different"', renewalSignal:false, jiraLink:'', prdLink:'' },
-  { id:'FR-018', name:'Delete / remove old workouts from schedule', count:3, firstLogged:'08/05/2026', lastLogged:'09/06/2026', sources:['CX'], status:'🟡 Logged', notes:'No self-serve way to clear accumulated or missed workouts. "User deseja excluir treinos antigos" · "End User cannot remove the workouts he used to have"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/MAIN-70904', prdLink:'https://docs.google.com/document/d/1jyeJg46WKYYApIg9uTxKizu-t-fXISuQ6IqBRE1XBY8/edit' },
-  { id:'FR-019', name:'Send images / media in in-app chat', count:1, firstLogged:'29/05/2026', lastLogged:'29/05/2026', sources:['CX'], status:'🟡 Logged', notes:'Chat is text-only. Trainers and users want to share form photos and progress pictures. "Não consegue enviar mídia no chat"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/MAIN-73401', prdLink:'' },
-  { id:'FR-020', name:'Sync with Apple Health / Google Health', count:14, firstLogged:'22/06/2023', lastLogged:'02/03/2026', sources:['CX'], status:'✅ Shipped', notes:'14 CX tickets logged pre-ship (Jun 2023 – Mar 2026): calorie/HR transfer, Apple Watch pairing, workout sync. Shipped May 2026: TRNC-3109 (Apple Health), TRNC-3110 (Google Health). "App not tracking his heart rate and won\'t transfer calorie info to Apple activities" (TBT-482) · "The performance data from Trainiac is not syncing with Apple Health" (MAIN-55085)', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-3109', prdLink:'https://docs.google.com/document/d/1sjnnLk11YtVIhLg9SelO5Aqtl8XOF5SAr6Mx7pdj8VI/edit' },
-  { id:'FR-021', name:'Weight & rep history across sessions (progressive overload tracking)', count:3, firstLogged:'04/06/2026', lastLogged:'18/06/2026', sources:['App Store'], status:'🟡 Logged', notes:'App does not show previous session weights/reps when starting a new set. Distinct from FR-001 (input method). "doesn\'t save weight values selected by the user" (GP Jun 4) · "doesn\'t save a history of weights and reps" (GP Jun 9)', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-001', name:'Weight input via keyboard / quick-repeat previous weight', count:3, firstLogged:'23/06/2023', lastLogged:'06/08/2024', sources:['CX','Service Desk'], status:'🟡 Logged', persona:'User', os:'Both', notes:'Users set weights by scrolling a picker — 30+ times per session. High churn risk. "são mais de 30 vezes que preciso ficar rolando esses pesos... estou cogitando largar o serviço"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-002', name:'Reorder / skip exercises during workout', count:3, firstLogged:'03/04/2024', lastLogged:'04/07/2024', sources:['CX'], status:'🟢 In Jira', persona:'User', os:'Both', notes:'Members can\'t skip to a different exercise when equipment is busy. Android parity gap vs iOS. "Sometimes equipment is busy at the gym — would be great to change exercise order freely"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2244', prdLink:'https://docs.google.com/document/d/1YfrPVqCzAkKqP8qR3yPbg9A8LIXGUUbzx9G26NwhhJs/edit' },
+  { id:'FR-003', name:'Edit workout after logging (change weight, add notes)', count:1, firstLogged:'15/05/2024', lastLogged:'15/05/2024', sources:['CX'], status:'🟡 Logged', persona:'User', os:'Both', notes:'No way to correct a logged workout after submission. "ability to make adjustments such as changing the weight used in pounds or adding notes post-workout"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-2705', prdLink:'https://docs.google.com/document/d/1jyeJg46WKYYApIg9uTxKizu-t-fXISuQ6IqBRE1XBY8/edit' },
+  { id:'FR-004', name:'Longer workout plans (30+ days, no weekly re-send)', count:3, firstLogged:'27/04/2023', lastLogged:'01/07/2024', sources:['CX'], status:'🟢 In Jira', persona:'Trainer', os:'', notes:'Trainers limited to ~2 week plans; users must reconnect weekly. Epic in progress: TRNC-2535. "30 dias seria um ótimo tempo" · "routines limited to 5 weeks — have to resend weekly"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2535', prdLink:'https://docs.google.com/document/d/1kwEslC0KGBd5aD54YVtx2GqvdlxGdMMX3socssldRuU/edit' },
+  { id:'FR-005', name:'Option to disable exercise video autoplay', count:1, firstLogged:'13/06/2024', lastLogged:'13/06/2024', sources:['CX'], status:'🟡 Logged', persona:'User', os:'Both', notes:'Videos autoplay per exercise, making app slow on lower-end devices. "Cada exercício tem um vídeo explicativo que deixa o App extremamente pesado"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-006', name:'Push notification when trainer uploads new plan', count:1, firstLogged:'29/03/2023', lastLogged:'29/03/2023', sources:['CX'], status:'🟢 In Jira', persona:'User', os:'Both', notes:'Users not notified when trainer assigns a plan. TRNC-2734 (PWA Notifications, In Progress). "User couldn\'t tell if trainer had uploaded plan — no notification was sent"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2734', prdLink:'' },
+  { id:'FR-007', name:'Native exercise demos (replace YouTube links)', count:1, firstLogged:'20/03/2024', lastLogged:'20/03/2024', sources:['CX'], status:'🟡 Logged', persona:'User', os:'Both', notes:'Some demos link out to YouTube, breaking workout flow. "ellos no quieren ver un link de youtube... quieren ver directamente el ejercicio a hacer en la app de Trainiac"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-008', name:'Exercise library variety / exercise rotation', count:3, firstLogged:'20/03/2024', lastLogged:'16/06/2026', sources:['CX','App Store'], status:'🟡 Logged', persona:'Both', os:'Both', notes:'Long-term users see the same exercises repeatedly. "They\'ve had the same exercise library for years. It\'s extremely limited" (GP Jun 9) · "exercises available in the app are very limited" (iOS Jun 16)', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-009', name:'Swimming distance in yards / pool lengths', count:1, firstLogged:'14/07/2023', lastLogged:'14/07/2023', sources:['CX'], status:'🟡 Logged', persona:'User', os:'Both', notes:'Only km and miles supported for swimming. "Why are the only options for swimming to be measured in kilometers or miles? Who has a kilometer-long pool?"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-010', name:'Trainer availability / rescheduling improvements', count:1, firstLogged:'18/03/2024', lastLogged:'18/03/2024', sources:['CX'], status:'🟡 Logged', persona:'Trainer', os:'', notes:'Scheduler creates incorrect exceptions, requiring full resets of availability blocks. System showed exceptions trainer had not set.', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-011', name:'Trainer notes on individual exercises in workout builder', count:1, firstLogged:'11/11/2023', lastLogged:'11/11/2023', sources:['CX'], status:'🟡 Logged', persona:'Trainer', os:'', notes:'HIIT builder shows a note prompt per exercise but the field doesn\'t save. "Addition of the trainer\'s note to individual exercises is currently not allowed despite the fact that there is a prompt to do so"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-1598', prdLink:'https://docs.google.com/document/d/1fLPogh9PHd-RjhHac2yqwXCOFMEp5JlzYjDU_MPk_OA/edit' },
+  { id:'FR-012', name:'Bulk exercise selection and editing in workout builder', count:1, firstLogged:'14/12/2024', lastLogged:'14/12/2024', sources:['CX'], status:'🟡 Logged', persona:'Trainer', os:'', notes:'Trainers must add and configure exercises one at a time. "Is there a way when building workouts we can add select multiple exercises at the same time and then modify them?"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-4239', prdLink:'https://docs.google.com/document/d/1fLPogh9PHd-RjhHac2yqwXCOFMEp5JlzYjDU_MPk_OA/edit' },
+  { id:'FR-013', name:'Workout program templates', count:1, firstLogged:'27/12/2024', lastLogged:'27/12/2024', sources:['CX'], status:'🟢 In Jira', persona:'Trainer', os:'', notes:'Trainers rebuild plans from scratch for each client. Covered by TRNC-2535. "Would like to know if we have a template group option when trying to build exercise programs"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2535', prdLink:'https://docs.google.com/document/d/1kwEslC0KGBd5aD54YVtx2GqvdlxGdMMX3socssldRuU/edit' },
+  { id:'FR-014', name:'Filter / prefer female coaches', count:1, firstLogged:'12/07/2024', lastLogged:'12/07/2024', sources:['CX'], status:'🟡 Logged', persona:'User', os:'Both', notes:'Female users matched with male trainers against preference. No gender filter. "I\'m a woman and don\'t feel comfortable talking with men about my health and fitness"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-3175', prdLink:'https://docs.google.com/document/d/14Ve1QYch6-xtu0BC2ECqE1pSvnYzpQ7Pi6zcQbnoi6I/edit' },
+  { id:'FR-015', name:'Auto-expire / dismiss past-due workouts', count:2, firstLogged:'09/12/2024', lastLogged:'18/06/2026', sources:['CX','App Store'], status:'🟢 In Jira', persona:'User', os:'Both', notes:'Past-due workouts stay pinned at top of list. TRNC-2906. "When a workout passes its scheduled date it stays as the first thing to do" · "I always have to scroll a lot to get to the current day" (GP Jun 18)', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2906', prdLink:'https://docs.google.com/document/d/1YfrPVqCzAkKqP8qR3yPbg9A8LIXGUUbzx9G26NwhhJs/edit' },
+  { id:'FR-016', name:'Option to disable end-of-workout feedback form', count:1, firstLogged:'10/07/2024', lastLogged:'10/07/2024', sources:['CX'], status:'🟡 Logged', persona:'User', os:'Both', notes:'Post-workout survey shown after every session, users find it disruptive. "Please deactivate the feedback function at the end of the training — only the trainer feedback is useful, the rest is just annoying"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-017', name:'Multi-gym / equipment context per workout', count:1, firstLogged:'10/07/2024', lastLogged:'10/07/2024', sources:['CX'], status:'🟡 Logged', persona:'User', os:'Both', notes:'Users training at 2+ gyms need weight suggestions tailored to each location\'s equipment. "I go to 2 different gyms — the difference between weights on the abdominal machine is extremely different"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-018', name:'Delete / remove old workouts from schedule', count:3, firstLogged:'08/05/2026', lastLogged:'09/06/2026', sources:['CX'], status:'🟡 Logged', persona:'User', os:'Both', notes:'No self-serve way to clear accumulated or missed workouts. "User deseja excluir treinos antigos" · "End User cannot remove the workouts he used to have"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/MAIN-70904', prdLink:'https://docs.google.com/document/d/1jyeJg46WKYYApIg9uTxKizu-t-fXISuQ6IqBRE1XBY8/edit' },
+  { id:'FR-019', name:'Send images / media in in-app chat', count:1, firstLogged:'29/05/2026', lastLogged:'29/05/2026', sources:['CX'], status:'🟡 Logged', persona:'Both', os:'Both', notes:'Chat is text-only. Trainers and users want to share form photos and progress pictures. "Não consegue enviar mídia no chat"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/MAIN-73401', prdLink:'' },
+  { id:'FR-020', name:'Sync with Apple Health / Google Health', count:14, firstLogged:'22/06/2023', lastLogged:'02/03/2026', sources:['CX'], status:'✅ Shipped', persona:'User', os:'Both', notes:'14 CX tickets logged pre-ship (Jun 2023 – Mar 2026): calorie/HR transfer, Apple Watch pairing, workout sync. Shipped May 2026: TRNC-3109 (Apple Health), TRNC-3110 (Google Health). "App not tracking his heart rate and won\'t transfer calorie info to Apple activities" (TBT-482) · "The performance data from Trainiac is not syncing with Apple Health" (MAIN-55085)', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-3109', prdLink:'https://docs.google.com/document/d/1sjnnLk11YtVIhLg9SelO5Aqtl8XOF5SAr6Mx7pdj8VI/edit' },
+  { id:'FR-021', name:'Weight & rep history across sessions (progressive overload tracking)', count:3, firstLogged:'04/06/2026', lastLogged:'18/06/2026', sources:['App Store'], status:'🟡 Logged', persona:'User', os:'Both', notes:'App does not show previous session weights/reps when starting a new set. Distinct from FR-001 (input method). "doesn\'t save weight values selected by the user" (GP Jun 4) · "doesn\'t save a history of weights and reps" (GP Jun 9)', renewalSignal:false, jiraLink:'', prdLink:'' },
 ];
 
 let requests = JSON.parse(localStorage.getItem('trainiac-fr') || 'null');
-if (!requests || requests.length < SEED_DATA.length) {
+// v2: re-seed if persona field missing (added 19/06/2026)
+if (!requests || requests.length < SEED_DATA.length || !requests[0].persona) {
   requests = SEED_DATA;
   localStorage.setItem('trainiac-fr', JSON.stringify(requests));
 }
 
-let filters = { status: 'all', source: 'all' };
+let filters = { status: 'all', source: 'all', persona: 'all' };
 let sortBy = 'count-desc';
 let searchQuery = '';
 let currentView = 'table';
@@ -384,6 +400,7 @@ function getFiltered() {
   return requests.filter(r => {
     if (filters.status !== 'all' && r.status !== filters.status) return false;
     if (filters.source !== 'all' && !r.sources.includes(filters.source)) return false;
+    if (filters.persona !== 'all' && r.persona !== filters.persona) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       if (!r.name.toLowerCase().includes(q) && !r.notes.toLowerCase().includes(q) && !r.id.toLowerCase().includes(q)) return false;
@@ -430,6 +447,13 @@ function sourceTag(s) {
   const label = s==='Service Desk'?'SD':s==='App Store'?'AS':s;
   return '<span class="source-tag '+cls+'">'+label+'</span>';
 }
+function personaBadge(r) {
+  const p = r.persona || 'User';
+  const cls = p === 'Trainer' ? 'persona-trainer' : p === 'Both' ? 'persona-both' : 'persona-user';
+  const label = p === 'Trainer' ? '🏋 T4T' : p === 'Both' ? '⇄ Both' : '📱 User App';
+  const osHtml = (p !== 'Trainer' && r.os) ? '<span class="os-tag">'+r.os+'</span>' : '';
+  return '<span class="persona-badge '+cls+'">'+label+'</span>'+osHtml;
+}
 function isAtThreshold(r) {
   return r.count >= THRESHOLD_COUNT || (r.renewalSignal && r.count >= THRESHOLD_CS_COUNT);
 }
@@ -470,6 +494,7 @@ function renderTable() {
       '<td><span class="count-pill '+countClass(r.count)+'">'+(r.count!=null?r.count:'—')+'</span></td>'+
       '<td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">'+(r.lastLogged||'—')+'</td>'+
       '<td>'+(r.sources||[]).map(sourceTag).join('')+'</td>'+
+      '<td>'+personaBadge(r)+'</td>'+
       '<td><span class="status-badge '+statusClass(r.status)+'">'+r.status+'</span></td>'+
       '<td><span class="notes-cell">'+(r.notes||'—')+'</span></td>'+
       '<td><div class="link-cell">'+(links.length?links.join(''):'<span style="color:var(--text-muted);font-size:12px;">—</span>')+'</div></td>'+
@@ -520,6 +545,14 @@ function openDetail(id) {
       '<div class="modal-field" style="flex:1"><label>First logged</label><input type="text" id="m-first" value="'+(r.firstLogged||'')+'" placeholder="DD/MM/YYYY" /></div>'+
       '<div class="modal-field" style="flex:1"><label>Last logged</label><input type="text" id="m-last" value="'+(r.lastLogged||'')+'" placeholder="DD/MM/YYYY" /></div>'+
     '</div>'+
+    '<div style="display:flex;gap:12px;">'+
+      '<div class="modal-field" style="flex:1"><label>Persona</label><select id="m-persona" onchange="toggleOsField()">'+
+        ['User','Trainer','Both'].map(p=>'<option value="'+p+'"'+(r.persona===p?' selected':'')+'>'+p+(p==='Trainer'?' (T4T)':p==='User'?' (client app)':' (T4T + app)')+'</option>').join('')+
+      '</select></div>'+
+      '<div class="modal-field" id="m-os-wrap" style="flex:1;'+(r.persona==='Trainer'?'display:none':'')+'"><label>OS</label><select id="m-os">'+
+        ['Both','iOS','Android'].map(o=>'<option value="'+o+'"'+(r.os===o?' selected':'')+'>'+o+'</option>').join('')+
+      '</select></div>'+
+    '</div>'+
     '<div class="modal-field"><label>Sources</label><div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">'+
       ['CX','App Store','Service Desk','CS','In-app'].map(s=>'<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;"><input type="checkbox" value="'+s+'" '+((r.sources||[]).includes(s)?'checked':'')+'>'+s+'</label>').join('')+
     '</div></div>'+
@@ -544,6 +577,14 @@ function openAddModal() {
       '<div class="modal-field" style="flex:1"><label>First logged</label><input type="text" id="m-first" placeholder="DD/MM/YYYY" /></div>'+
       '<div class="modal-field" style="flex:1"><label>Last logged</label><input type="text" id="m-last" placeholder="DD/MM/YYYY" /></div>'+
     '</div>'+
+    '<div style="display:flex;gap:12px;">'+
+      '<div class="modal-field" style="flex:1"><label>Persona</label><select id="m-persona" onchange="toggleOsField()">'+
+        ['User','Trainer','Both'].map(p=>'<option value="'+p+'">'+p+(p==='Trainer'?' (T4T)':p==='User'?' (client app)':' (T4T + app)')+'</option>').join('')+
+      '</select></div>'+
+      '<div class="modal-field" id="m-os-wrap" style="flex:1"><label>OS</label><select id="m-os">'+
+        ['Both','iOS','Android'].map(o=>'<option value="'+o+'">'+o+'</option>').join('')+
+      '</select></div>'+
+    '</div>'+
     '<div class="modal-field"><label>Sources</label><div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">'+
       ['CX','App Store','Service Desk','CS','In-app'].map(s=>'<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;"><input type="checkbox" value="'+s+'">'+s+'</label>').join('')+
     '</div></div>'+
@@ -561,10 +602,13 @@ function saveModal() {
   const countRaw = document.getElementById('m-count').value;
   const count = countRaw !== '' ? parseInt(countRaw) : null;
   const sources = [...document.querySelectorAll('#modal-body input[type=checkbox][value]')].filter(c=>c.checked).map(c=>c.value);
+  const persona = document.getElementById('m-persona').value;
   const data = { name, count,
     firstLogged: document.getElementById('m-first').value.trim(),
     lastLogged: document.getElementById('m-last').value.trim(),
     sources, status: document.getElementById('m-status').value,
+    persona,
+    os: persona === 'Trainer' ? '' : (document.getElementById('m-os').value || 'Both'),
     renewalSignal: document.getElementById('m-renewal').checked,
     notes: document.getElementById('m-notes').value.trim(),
     jiraLink: document.getElementById('m-jira').value.trim(),
@@ -586,6 +630,10 @@ function deleteRequest(id) {
   save(); closeModalDirect(); render();
 }
 
+function toggleOsField() {
+  const wrap = document.getElementById('m-os-wrap');
+  if (wrap) wrap.style.display = document.getElementById('m-persona').value === 'Trainer' ? 'none' : '';
+}
 function closeModal(e) { if (e.target===document.getElementById('modal')) closeModalDirect(); }
 function closeModalDirect() { document.getElementById('modal').classList.remove('open'); editingId=null; }
 
