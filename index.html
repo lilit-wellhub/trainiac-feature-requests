@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trainiac — Feature Request Dashboard</title>
+
+
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple-dark:   #1B1340;
+      --purple-mid:    #5B4191;
+      --purple-main:   #A880FF;
+      --purple-light:  #DDCCFF;
+      --magenta-main:  #F2469B;
+      --magenta-dark:  #590931;
+      --magenta-pink:  #FF809F;
+      --green-lime:    #DCFF79;
+      --green-mid:     #0C8046;
+      --green-dark:    #034036;
+      --black:         #1D101F;
+      --off-white:     #FBF8EC;
+      --off-white-s1:  #F6EDDF;
+      --off-white-s2:  #ECE0CD;
+      --text-muted:    #6B6073;
+      --border:        #E8DFD0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--off-white);
+      color: var(--black);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    .header {
+      background: var(--purple-dark);
+      color: white;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .brand-mark {
+      width: 32px; height: 32px;
+      background: var(--magenta-main);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 15px; color: white;
+      flex-shrink: 0;
+    }
+    .brand-title { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; line-height: 1; }
+    .brand-title em { color: var(--magenta-main); font-style: normal; }
+    .brand-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .view-toggle { display: flex; gap: 2px; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 3px; }
+    .view-btn { padding: 5px 14px; border-radius: 6px; border: none; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; color: rgba(255,255,255,0.55); font-family: inherit; transition: all 0.15s; }
+    .view-btn.active { background: white; color: var(--purple-dark); }
+    .btn-add { display: flex; align-items: center; gap: 6px; padding: 7px 16px; background: var(--magenta-main); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+    .btn-add:hover { background: #d93e8a; }
+    .sync-btn { padding: 6px 14px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.25); background: transparent; color: rgba(255,255,255,0.75); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .sync-btn:hover { border-color: white; color: white; }
+    .sync-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .last-updated { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+    /* Sync banner */
+    #sync-banner { display: none; background: var(--purple-light); border-bottom: 2px solid var(--purple-mid); padding: 10px 32px; font-size: 13px; color: var(--purple-dark); }
+
+    /* Stats */
+    .stats-bar { background: var(--purple-dark); padding: 0 32px 20px; display: flex; gap: 10px; }
+    .stat-card { flex: 1; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px 20px; min-width: 0; }
+    .stat-value { font-size: 30px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; color: var(--green-lime); }
+    .stat-value.alert { color: var(--magenta-pink); }
+    .stat-value.muted { color: rgba(255,255,255,0.45); }
+    .stat-value.white { color: white; }
+    .stat-label { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
+
+    /* Threshold banner */
+    .threshold-banner { display: none; margin: 16px 32px 0; background: #FFF0F6; border: 1.5px solid var(--magenta-main); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--magenta-dark); }
+    .threshold-banner strong { color: var(--magenta-main); }
+
+    /* Controls */
+    .controls { padding: 14px 32px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .filter-group { display: flex; gap: 4px; flex-wrap: wrap; }
+    .filter-pill { padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: white; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text-muted); font-family: inherit; transition: all 0.12s; }
+    .filter-pill:hover { border-color: var(--magenta-main); color: var(--magenta-main); }
+    .filter-pill.active { background: var(--magenta-main); border-color: var(--magenta-main); color: white; font-weight: 600; }
+    .controls-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+    .sort-select { padding: 5px 10px; border-radius: 8px; border: 1.5px solid var(--border); font-size: 12px; font-weight: 500; background: white; cursor: pointer; color: var(--text-muted); font-family: inherit; outline: none; }
+    .sort-select:focus { border-color: var(--magenta-main); }
+    .search-wrap { margin-left: auto; position: relative; }
+    .search-input { padding: 6px 12px 6px 28px; border-radius: 8px; border: 1.5px solid var(--border); font-size: 13px; width: 200px; outline: none; font-family: inherit; color: var(--black); background: white; }
+    .search-input:focus { border-color: var(--magenta-main); }
+    .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--text-muted); pointer-events: none; }
+    .filter-section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); flex-shrink: 0; }
+
+    /* Table */
+    .table-container { padding: 20px 32px 40px; }
+    .table-wrapper { background: white; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: var(--off-white-s1); border-bottom: 1px solid var(--border); }
+    th { padding: 11px 16px; text-align: left; font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; cursor: pointer; user-select: none; white-space: nowrap; }
+    th:hover { color: var(--magenta-main); }
+    th .sort-icon { margin-left: 3px; opacity: 0.3; }
+    th.sorted .sort-icon { opacity: 1; color: var(--magenta-main); }
+    tbody tr { border-bottom: 1px solid var(--off-white-s1); transition: background 0.1s; cursor: pointer; }
+    tbody tr:hover { background: var(--off-white); }
+    tbody tr:last-child { border-bottom: none; }
+    td { padding: 13px 16px; vertical-align: middle; }
+
+    .fr-id { font-family: 'SF Mono','Fira Code',monospace; font-size: 11px; color: var(--text-muted); background: var(--off-white-s1); padding: 2px 6px; border-radius: 4px; }
+    .fr-name { font-weight: 600; color: var(--black); line-height: 1.4; }
+    .alert-badge { display: inline-block; background: var(--magenta-main); color: white; font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px; margin-left: 6px; vertical-align: middle; letter-spacing: 0.3px; }
+    .renewal-flag { color: var(--magenta-main); }
+
+    .count-pill { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 13px; }
+    .count-high { background: #FFDEE9; color: var(--magenta-dark); }
+    .count-mid  { background: #FFF3CC; color: #7a5900; }
+    .count-low  { background: var(--purple-light); color: var(--purple-dark); }
+    .count-none { background: var(--off-white-s1); color: #aaa; font-style: italic; font-size: 12px; font-weight: 400; }
+
+    .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .st-logged  { background: #FFF3CC; color: #7a5900; }
+    .st-review  { background: var(--purple-light); color: var(--purple-mid); }
+    .st-prd     { background: #FFE8F3; color: var(--magenta-dark); }
+    .st-jira    { background: #D4F5E2; color: var(--green-dark); }
+    .st-shipped { background: #E8FFB2; color: #2d4a00; }
+    .st-declined{ background: var(--off-white-s1); color: var(--text-muted); }
+
+    .source-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; margin: 1px 2px 1px 0; }
+    .source-tag.cx { background: #E0F0FF; color: #0a4a8c; }
+    .source-tag.sd { background: #E0F7EF; color: #0a5c35; }
+    .source-tag.cs { background: var(--purple-light); color: var(--purple-mid); }
+    .source-tag.ia { background: #FFF0E0; color: #7a3a00; }
+    .source-tag.as { background: #FFE8F3; color: var(--magenta-dark); }
+
+    .notes-cell { max-width: 200px; font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .link-cell { display: flex; flex-direction: column; gap: 3px; }
+    .ext-link { font-size: 11px; font-weight: 600; text-decoration: none; padding: 2px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 3px; width: fit-content; }
+    .ext-link.jira { background: #E0F0FF; color: #0a4a8c; }
+    .ext-link.prd  { background: #FFE8F3; color: var(--magenta-dark); }
+    .ext-link:hover { opacity: 0.75; }
+
+    /* Empty */
+    .empty-state { text-align: center; padding: 56px 32px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+    /* Pipeline */
+    .pipeline { display: flex; gap: 12px; padding: 20px 32px 40px; overflow-x: auto; align-items: flex-start; }
+    .pipeline-col { flex: 0 0 220px; }
+    .pipeline-col-header { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 10px 14px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
+    .pipeline-col-header .pl-count { background: rgba(0,0,0,0.15); padding: 2px 7px; border-radius: 10px; font-size: 11px; }
+    .pipeline-col-body { min-height: 100px; padding: 8px; border-radius: 0 0 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+    .pipeline-card { background: white; border-radius: 8px; padding: 10px 12px; font-size: 12px; border: 1px solid var(--border); border-left: 3px solid transparent; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+    .pipeline-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .pipeline-card .card-title { font-weight: 600; margin-bottom: 4px; color: var(--black); line-height: 1.3; }
+    .pipeline-card .card-count { font-size: 11px; color: var(--text-muted); }
+    .pipeline-card.threshold { border-left-color: var(--magenta-main) !important; }
+
+    .s-logged  { background: #FFFBE6; }
+    .s-logged  .pipeline-col-header { background: #F5C842; color: #5a4000; }
+    .s-logged  .pipeline-card { border-left-color: #E8B800; }
+    .s-review  { background: #F0EAFF; }
+    .s-review  .pipeline-col-header { background: var(--purple-mid); color: white; }
+    .s-review  .pipeline-card { border-left-color: var(--purple-mid); }
+    .s-prd     { background: #FFF0F6; }
+    .s-prd     .pipeline-col-header { background: var(--magenta-main); color: white; }
+    .s-prd     .pipeline-card { border-left-color: var(--magenta-main); }
+    .s-jira    { background: #EEFAF4; }
+    .s-jira    .pipeline-col-header { background: var(--green-mid); color: white; }
+    .s-jira    .pipeline-card { border-left-color: var(--green-mid); }
+    .s-shipped { background: #F0FFC0; }
+    .s-shipped .pipeline-col-header { background: var(--green-dark); color: var(--green-lime); }
+    .s-shipped .pipeline-card { border-left-color: var(--green-dark); }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(27,19,64,0.55); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 16px; width: 560px; max-width: 95vw; max-height: 88vh; overflow-y: auto; box-shadow: 0 16px 60px rgba(27,19,64,0.22); }
+    .modal-header { padding: 24px 28px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+    .modal-header h2 { font-size: 17px; font-weight: 700; }
+    .modal-close { cursor: pointer; font-size: 20px; color: var(--text-muted); background: none; border: none; padding: 2px 6px; border-radius: 4px; line-height: 1; }
+    .modal-close:hover { background: var(--off-white-s1); }
+    .modal-body { padding: 20px 28px 28px; display: flex; flex-direction: column; gap: 14px; }
+    .modal-field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+    .modal-field textarea, .modal-field input[type=number], .modal-field input[type=text] { width: 100%; margin-top: 5px; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--black); outline: none; transition: border-color 0.15s; }
+    .modal-field textarea { resize: vertical; min-height: 80px; }
+    .modal-field textarea:focus, .modal-field input:focus { border-color: var(--magenta-main); }
+    .modal-field select { width: 100%; margin-top: 5px; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--black); outline: none; }
+    .modal-field select:focus { border-color: var(--magenta-main); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--border); }
+    .btn { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 0.15s; }
+    .btn-primary  { background: var(--magenta-main); color: white; }
+    .btn-primary:hover { background: #d93e8a; }
+    .btn-secondary { background: var(--off-white-s1); color: var(--text-muted); }
+    .btn-secondary:hover { background: var(--off-white-s2); }
+    .btn-danger { background: #FFDEE9; color: var(--magenta-dark); }
+    .btn-danger:hover { background: #ffc9dd; }
+
+    @media (max-width: 700px) {
+      .header { padding: 0 16px; }
+      .stats-bar { padding: 0 16px 16px; flex-wrap: wrap; }
+      .controls, .table-container, .pipeline { padding-left: 16px; padding-right: 16px; }
+      .brand-sub { display: none; }
+      th:nth-child(n+6), td:nth-child(n+6) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-brand">
+    <div class="brand-mark">T</div>
+    <div>
+      <div class="brand-title">Trainiac <em>Feature Requests</em></div>
+      <div class="brand-sub">Product · New Ventures · Wellhub</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="view-toggle">
+      <button class="view-btn active" onclick="setView('table')" id="view-table">Table</button>
+      <button class="view-btn" onclick="setView('pipeline')" id="view-pipeline">Pipeline</button>
+    </div>
+    <button class="sync-btn" onclick="syncFromJira()" id="sync-btn">⟳ Sync Jira</button>
+    <span class="last-updated" id="last-updated-label">—</span>
+    <button class="btn-add" onclick="openAddModal()">+ Add request</button>
+  </div>
+</div>
+
+<div id="sync-banner">
+  <strong>Jira sync:</strong> <span id="sync-status">Connecting…</span>
+</div>
+
+<div class="stats-bar" id="stats-bar"></div>
+
+<div id="threshold-banner" class="threshold-banner"></div>
+
+<div class="controls">
+  <span class="filter-section-label">Status</span>
+  <div class="filter-group">
+    <button class="filter-pill active" data-filter="status" data-value="all" onclick="setFilter('status','all',this)">All</button>
+    <button class="filter-pill" data-filter="status" data-value="🟡 Logged" onclick="setFilter('status','🟡 Logged',this)">Logged</button>
+    <button class="filter-pill" data-filter="status" data-value="🔵 Under Review" onclick="setFilter('status','🔵 Under Review',this)">Under Review</button>
+    <button class="filter-pill" data-filter="status" data-value="🟠 PRD Ready" onclick="setFilter('status','🟠 PRD Ready',this)">PRD Ready</button>
+    <button class="filter-pill" data-filter="status" data-value="🟢 In Jira" onclick="setFilter('status','🟢 In Jira',this)">In Jira</button>
+    <button class="filter-pill" data-filter="status" data-value="✅ Shipped" onclick="setFilter('status','✅ Shipped',this)">Shipped</button>
+    <button class="filter-pill" data-filter="status" data-value="❌ Declined" onclick="setFilter('status','❌ Declined',this)">Declined</button>
+  </div>
+  <div class="controls-sep"></div>
+  <span class="filter-section-label">Source</span>
+  <div class="filter-group">
+    <button class="filter-pill active" data-filter="source" data-value="all" onclick="setFilter('source','all',this)">All</button>
+    <button class="filter-pill" data-filter="source" data-value="CX" onclick="setFilter('source','CX',this)">CX</button>
+    <button class="filter-pill" data-filter="source" data-value="App Store" onclick="setFilter('source','App Store',this)">App Store</button>
+    <button class="filter-pill" data-filter="source" data-value="Service Desk" onclick="setFilter('source','Service Desk',this)">Service Desk</button>
+    <button class="filter-pill" data-filter="source" data-value="CS" onclick="setFilter('source','CS',this)">CS</button>
+  </div>
+  <div class="controls-sep"></div>
+  <select class="sort-select" onchange="setSort(this.value)">
+    <option value="count-desc">Count ↓</option>
+    <option value="count-asc">Count ↑</option>
+    <option value="date-desc">Newest first</option>
+    <option value="date-asc">Oldest first</option>
+    <option value="status">Status</option>
+  </select>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" type="text" placeholder="Search requests…" oninput="setSearch(this.value)" />
+  </div>
+</div>
+
+<div class="table-container" id="view-table-container">
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="setSort('id')">ID <span class="sort-icon">↕</span></th>
+          <th onclick="setSort('name')">Feature Request <span class="sort-icon">↕</span></th>
+          <th onclick="setSort('count-desc')">Count <span class="sort-icon">↕</span></th>
+          <th onclick="setSort('date-desc')">Last logged <span class="sort-icon">↕</span></th>
+          <th>Sources</th>
+          <th onclick="setSort('status')">Status <span class="sort-icon">↕</span></th>
+          <th>Notes</th>
+          <th>Links</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <div id="table-empty" class="empty-state" style="display:none;">
+      <div class="icon">🔍</div>
+      <p>No requests match your filters.</p>
+    </div>
+  </div>
+</div>
+
+<div class="pipeline" id="view-pipeline-container" style="display:none;">
+  <div class="pipeline-col s-logged">
+    <div class="pipeline-col-header">🟡 Logged <span class="pl-count" id="pl-logged">0</span></div>
+    <div class="pipeline-col-body" id="pl-logged-body"></div>
+  </div>
+  <div class="pipeline-col s-review">
+    <div class="pipeline-col-header">🔵 Under Review <span class="pl-count" id="pl-review">0</span></div>
+    <div class="pipeline-col-body" id="pl-review-body"></div>
+  </div>
+  <div class="pipeline-col s-prd">
+    <div class="pipeline-col-header">🟠 PRD Ready <span class="pl-count" id="pl-prd">0</span></div>
+    <div class="pipeline-col-body" id="pl-prd-body"></div>
+  </div>
+  <div class="pipeline-col s-jira">
+    <div class="pipeline-col-header">🟢 In Jira <span class="pl-count" id="pl-jira">0</span></div>
+    <div class="pipeline-col-body" id="pl-jira-body"></div>
+  </div>
+  <div class="pipeline-col s-shipped">
+    <div class="pipeline-col-header">✅ Shipped <span class="pl-count" id="pl-shipped">0</span></div>
+    <div class="pipeline-col-body" id="pl-shipped-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 id="modal-title">Feature Request</h2>
+      <button class="modal-close" onclick="closeModalDirect()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const THRESHOLD_COUNT = 10;
+const THRESHOLD_CS_COUNT = 5;
+const STATUS_ORDER = ['🟡 Logged','🔵 Under Review','🟠 PRD Ready','🟢 In Jira','✅ Shipped','❌ Declined'];
+
+const SEED_DATA = [
+  { id:'FR-001', name:'Weight input via keyboard / quick-repeat previous weight', count:3, firstLogged:'23/06/2023', lastLogged:'06/08/2024', sources:['CX','Service Desk'], status:'🟡 Logged', notes:'Users set weights by scrolling a picker — 30+ times per session. High churn risk. "são mais de 30 vezes que preciso ficar rolando esses pesos... estou cogitando largar o serviço"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-002', name:'Reorder / skip exercises during workout', count:3, firstLogged:'03/04/2024', lastLogged:'04/07/2024', sources:['CX'], status:'🟢 In Jira', notes:'Members can\'t skip to a different exercise when equipment is busy. Android parity gap vs iOS. "Sometimes equipment is busy at the gym — would be great to change exercise order freely"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2244', prdLink:'https://docs.google.com/document/d/1YfrPVqCzAkKqP8qR3yPbg9A8LIXGUUbzx9G26NwhhJs/edit' },
+  { id:'FR-003', name:'Edit workout after logging (change weight, add notes)', count:1, firstLogged:'15/05/2024', lastLogged:'15/05/2024', sources:['CX'], status:'🟡 Logged', notes:'No way to correct a logged workout after submission. "ability to make adjustments such as changing the weight used in pounds or adding notes post-workout"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-2705', prdLink:'https://docs.google.com/document/d/1jyeJg46WKYYApIg9uTxKizu-t-fXISuQ6IqBRE1XBY8/edit' },
+  { id:'FR-004', name:'Longer workout plans (30+ days, no weekly re-send)', count:3, firstLogged:'27/04/2023', lastLogged:'01/07/2024', sources:['CX'], status:'🟢 In Jira', notes:'Trainers limited to ~2 week plans; users must reconnect weekly. Epic in progress: TRNC-2535. "30 dias seria um ótimo tempo" · "routines limited to 5 weeks — have to resend weekly"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2535', prdLink:'https://docs.google.com/document/d/1kwEslC0KGBd5aD54YVtx2GqvdlxGdMMX3socssldRuU/edit' },
+  { id:'FR-005', name:'Option to disable exercise video autoplay', count:1, firstLogged:'13/06/2024', lastLogged:'13/06/2024', sources:['CX'], status:'🟡 Logged', notes:'Videos autoplay per exercise, making app slow on lower-end devices. "Cada exercício tem um vídeo explicativo que deixa o App extremamente pesado"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-006', name:'Push notification when trainer uploads new plan', count:1, firstLogged:'29/03/2023', lastLogged:'29/03/2023', sources:['CX'], status:'🟢 In Jira', notes:'Users not notified when trainer assigns a plan. TRNC-2734 (PWA Notifications, In Progress). "User couldn\'t tell if trainer had uploaded plan — no notification was sent"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2734', prdLink:'' },
+  { id:'FR-007', name:'Native exercise demos (replace YouTube links)', count:1, firstLogged:'20/03/2024', lastLogged:'20/03/2024', sources:['CX'], status:'🟡 Logged', notes:'Some demos link out to YouTube, breaking workout flow. "ellos no quieren ver un link de youtube... quieren ver directamente el ejercicio a hacer en la app de Trainiac"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-008', name:'Exercise library variety / exercise rotation', count:3, firstLogged:'20/03/2024', lastLogged:'16/06/2026', sources:['CX','App Store'], status:'🟡 Logged', notes:'Long-term users see the same exercises repeatedly. "They\'ve had the same exercise library for years. It\'s extremely limited" (GP Jun 9) · "exercises available in the app are very limited" (iOS Jun 16)', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-009', name:'Swimming distance in yards / pool lengths', count:1, firstLogged:'14/07/2023', lastLogged:'14/07/2023', sources:['CX'], status:'🟡 Logged', notes:'Only km and miles supported for swimming. "Why are the only options for swimming to be measured in kilometers or miles? Who has a kilometer-long pool?"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-010', name:'Trainer availability / rescheduling improvements', count:1, firstLogged:'18/03/2024', lastLogged:'18/03/2024', sources:['CX'], status:'🟡 Logged', notes:'Scheduler creates incorrect exceptions, requiring full resets of availability blocks. System showed exceptions trainer had not set.', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-011', name:'Trainer notes on individual exercises in workout builder', count:1, firstLogged:'11/11/2023', lastLogged:'11/11/2023', sources:['CX'], status:'🟡 Logged', notes:'HIIT builder shows a note prompt per exercise but the field doesn\'t save. "Addition of the trainer\'s note to individual exercises is currently not allowed despite the fact that there is a prompt to do so"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-1598', prdLink:'https://docs.google.com/document/d/1fLPogh9PHd-RjhHac2yqwXCOFMEp5JlzYjDU_MPk_OA/edit' },
+  { id:'FR-012', name:'Bulk exercise selection and editing in workout builder', count:1, firstLogged:'14/12/2024', lastLogged:'14/12/2024', sources:['CX'], status:'🟡 Logged', notes:'Trainers must add and configure exercises one at a time. "Is there a way when building workouts we can add select multiple exercises at the same time and then modify them?"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-4239', prdLink:'https://docs.google.com/document/d/1fLPogh9PHd-RjhHac2yqwXCOFMEp5JlzYjDU_MPk_OA/edit' },
+  { id:'FR-013', name:'Workout program templates', count:1, firstLogged:'27/12/2024', lastLogged:'27/12/2024', sources:['CX'], status:'🟢 In Jira', notes:'Trainers rebuild plans from scratch for each client. Covered by TRNC-2535. "Would like to know if we have a template group option when trying to build exercise programs"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2535', prdLink:'https://docs.google.com/document/d/1kwEslC0KGBd5aD54YVtx2GqvdlxGdMMX3socssldRuU/edit' },
+  { id:'FR-014', name:'Filter / prefer female coaches', count:1, firstLogged:'12/07/2024', lastLogged:'12/07/2024', sources:['CX'], status:'🟡 Logged', notes:'Female users matched with male trainers against preference. No gender filter. "I\'m a woman and don\'t feel comfortable talking with men about my health and fitness"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TBT-3175', prdLink:'https://docs.google.com/document/d/14Ve1QYch6-xtu0BC2ECqE1pSvnYzpQ7Pi6zcQbnoi6I/edit' },
+  { id:'FR-015', name:'Auto-expire / dismiss past-due workouts', count:2, firstLogged:'09/12/2024', lastLogged:'18/06/2026', sources:['CX','App Store'], status:'🟢 In Jira', notes:'Past-due workouts stay pinned at top of list. TRNC-2906. "When a workout passes its scheduled date it stays as the first thing to do" · "I always have to scroll a lot to get to the current day" (GP Jun 18)', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-2906', prdLink:'https://docs.google.com/document/d/1YfrPVqCzAkKqP8qR3yPbg9A8LIXGUUbzx9G26NwhhJs/edit' },
+  { id:'FR-016', name:'Option to disable end-of-workout feedback form', count:1, firstLogged:'10/07/2024', lastLogged:'10/07/2024', sources:['CX'], status:'🟡 Logged', notes:'Post-workout survey shown after every session, users find it disruptive. "Please deactivate the feedback function at the end of the training — only the trainer feedback is useful, the rest is just annoying"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-017', name:'Multi-gym / equipment context per workout', count:1, firstLogged:'10/07/2024', lastLogged:'10/07/2024', sources:['CX'], status:'🟡 Logged', notes:'Users training at 2+ gyms need weight suggestions tailored to each location\'s equipment. "I go to 2 different gyms — the difference between weights on the abdominal machine is extremely different"', renewalSignal:false, jiraLink:'', prdLink:'' },
+  { id:'FR-018', name:'Delete / remove old workouts from schedule', count:3, firstLogged:'08/05/2026', lastLogged:'09/06/2026', sources:['CX'], status:'🟡 Logged', notes:'No self-serve way to clear accumulated or missed workouts. "User deseja excluir treinos antigos" · "End User cannot remove the workouts he used to have"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/MAIN-70904', prdLink:'https://docs.google.com/document/d/1jyeJg46WKYYApIg9uTxKizu-t-fXISuQ6IqBRE1XBY8/edit' },
+  { id:'FR-019', name:'Send images / media in in-app chat', count:1, firstLogged:'29/05/2026', lastLogged:'29/05/2026', sources:['CX'], status:'🟡 Logged', notes:'Chat is text-only. Trainers and users want to share form photos and progress pictures. "Não consegue enviar mídia no chat"', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/MAIN-73401', prdLink:'' },
+  { id:'FR-020', name:'Sync with Apple Health / Google Health', count:14, firstLogged:'22/06/2023', lastLogged:'02/03/2026', sources:['CX'], status:'✅ Shipped', notes:'14 CX tickets logged pre-ship (Jun 2023 – Mar 2026): calorie/HR transfer, Apple Watch pairing, workout sync. Shipped May 2026: TRNC-3109 (Apple Health), TRNC-3110 (Google Health). "App not tracking his heart rate and won\'t transfer calorie info to Apple activities" (TBT-482) · "The performance data from Trainiac is not syncing with Apple Health" (MAIN-55085)', renewalSignal:false, jiraLink:'https://gympass.atlassian.net/browse/TRNC-3109', prdLink:'https://docs.google.com/document/d/1sjnnLk11YtVIhLg9SelO5Aqtl8XOF5SAr6Mx7pdj8VI/edit' },
+  { id:'FR-021', name:'Weight & rep history across sessions (progressive overload tracking)', count:3, firstLogged:'04/06/2026', lastLogged:'18/06/2026', sources:['App Store'], status:'🟡 Logged', notes:'App does not show previous session weights/reps when starting a new set. Distinct from FR-001 (input method). "doesn\'t save weight values selected by the user" (GP Jun 4) · "doesn\'t save a history of weights and reps" (GP Jun 9)', renewalSignal:false, jiraLink:'', prdLink:'' },
+];
+
+let requests = JSON.parse(localStorage.getItem('trainiac-fr') || 'null');
+if (!requests || requests.length < SEED_DATA.length) {
+  requests = SEED_DATA;
+  localStorage.setItem('trainiac-fr', JSON.stringify(requests));
+}
+
+let filters = { status: 'all', source: 'all' };
+let sortBy = 'count-desc';
+let searchQuery = '';
+let currentView = 'table';
+let editingId = null;
+
+function save() { localStorage.setItem('trainiac-fr', JSON.stringify(requests)); }
+
+function getFiltered() {
+  return requests.filter(r => {
+    if (filters.status !== 'all' && r.status !== filters.status) return false;
+    if (filters.source !== 'all' && !r.sources.includes(filters.source)) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!r.name.toLowerCase().includes(q) && !r.notes.toLowerCase().includes(q) && !r.id.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  }).sort((a,b) => {
+    if (sortBy === 'count-desc') return (b.count||0)-(a.count||0);
+    if (sortBy === 'count-asc') return (a.count||0)-(b.count||0);
+    if (sortBy === 'date-desc') return (b.lastLogged||'').localeCompare(a.lastLogged||'');
+    if (sortBy === 'date-asc') return (a.lastLogged||'').localeCompare(b.lastLogged||'');
+    if (sortBy === 'status') return STATUS_ORDER.indexOf(a.status)-STATUS_ORDER.indexOf(b.status);
+    return 0;
+  });
+}
+
+function setFilter(type, value, el) {
+  filters[type] = value;
+  document.querySelectorAll('[data-filter="'+type+'"]').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+function setSort(v) { sortBy=v; render(); }
+function setSearch(v) { searchQuery=v; render(); }
+function setView(v) {
+  currentView=v;
+  document.getElementById('view-table-container').style.display = v==='table'?'':'none';
+  document.getElementById('view-pipeline-container').style.display = v==='pipeline'?'flex':'none';
+  document.getElementById('view-table').classList.toggle('active', v==='table');
+  document.getElementById('view-pipeline').classList.toggle('active', v==='pipeline');
+}
+
+function countClass(n) {
+  if (!n) return 'count-none';
+  if (n >= THRESHOLD_COUNT) return 'count-high';
+  if (n >= THRESHOLD_CS_COUNT) return 'count-mid';
+  return 'count-low';
+}
+function statusClass(s) {
+  const m = {'🟡 Logged':'st-logged','🔵 Under Review':'st-review','🟠 PRD Ready':'st-prd','🟢 In Jira':'st-jira','✅ Shipped':'st-shipped','❌ Declined':'st-declined'};
+  return m[s]||'st-logged';
+}
+function sourceTag(s) {
+  const cls = s==='CX'?'cx':s==='Service Desk'?'sd':s==='CS'?'cs':s==='In-app'?'ia':s==='App Store'?'as':'';
+  const label = s==='Service Desk'?'SD':s==='App Store'?'AS':s;
+  return '<span class="source-tag '+cls+'">'+label+'</span>';
+}
+function isAtThreshold(r) {
+  return r.count >= THRESHOLD_COUNT || (r.renewalSignal && r.count >= THRESHOLD_CS_COUNT);
+}
+
+function renderStats() {
+  const total = requests.length;
+  const atThreshold = requests.filter(r => isAtThreshold(r) && r.status === '🟡 Logged').length;
+  const inFlight = requests.filter(r => ['🔵 Under Review','🟠 PRD Ready','🟢 In Jira'].includes(r.status)).length;
+  const shipped = requests.filter(r => r.status === '✅ Shipped').length;
+  const totalCount = requests.reduce((s,r)=>s+(r.count||0),0);
+  document.getElementById('stats-bar').innerHTML =
+    '<div class="stat-card"><div class="stat-value white">'+total+'</div><div class="stat-label">Total requests</div></div>' +
+    '<div class="stat-card"><div class="stat-value'+(atThreshold>0?' alert':'')+'">'+atThreshold+'</div><div class="stat-label">At threshold · needs PRD</div></div>' +
+    '<div class="stat-card"><div class="stat-value">'+inFlight+'</div><div class="stat-label">In flight</div></div>' +
+    '<div class="stat-card"><div class="stat-value">'+shipped+'</div><div class="stat-label">Shipped</div></div>' +
+    '<div class="stat-card"><div class="stat-value muted">'+totalCount+'</div><div class="stat-label">Total member signals</div></div>';
+  const banner = document.getElementById('threshold-banner');
+  const thresholdItems = requests.filter(r => isAtThreshold(r) && !['🟠 PRD Ready','🟢 In Jira','✅ Shipped'].includes(r.status));
+  if (thresholdItems.length > 0) {
+    banner.style.display = 'block';
+    banner.innerHTML = '⚠️ <strong>'+thresholdItems.length+' request'+(thresholdItems.length>1?'s':'')+' at threshold</strong> and not yet in PRD stage: '+thresholdItems.map(r=>'<strong>'+r.name+'</strong> ('+r.count+' signals)').join(', ')+'. Review within 5 business days.';
+  } else { banner.style.display = 'none'; }
+}
+
+function renderTable() {
+  const rows = getFiltered();
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('table-empty');
+  if (!rows.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = rows.map(r => {
+    const links = [];
+    if (r.jiraLink) links.push('<a class="ext-link jira" href="'+r.jiraLink+'" target="_blank" onclick="event.stopPropagation()">Jira ↗</a>');
+    if (r.prdLink)  links.push('<a class="ext-link prd"  href="'+r.prdLink+'"  target="_blank" onclick="event.stopPropagation()">PRD ↗</a>');
+    return '<tr onclick="openDetail(\''+r.id+'\')">'+
+      '<td><span class="fr-id">'+r.id+'</span></td>'+
+      '<td><span class="fr-name">'+r.name+(isAtThreshold(r)&&r.status==='🟡 Logged'?'<span class="alert-badge">THRESHOLD</span>':'')+(r.renewalSignal?'<span class="renewal-flag" title="CS renewal signal"> 🔔</span>':'')+'</span></td>'+
+      '<td><span class="count-pill '+countClass(r.count)+'">'+(r.count!=null?r.count:'—')+'</span></td>'+
+      '<td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">'+(r.lastLogged||'—')+'</td>'+
+      '<td>'+(r.sources||[]).map(sourceTag).join('')+'</td>'+
+      '<td><span class="status-badge '+statusClass(r.status)+'">'+r.status+'</span></td>'+
+      '<td><span class="notes-cell">'+(r.notes||'—')+'</span></td>'+
+      '<td><div class="link-cell">'+(links.length?links.join(''):'<span style="color:var(--text-muted);font-size:12px;">—</span>')+'</div></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderPipeline() {
+  const statusMap = {
+    '🟡 Logged':{bodyId:'pl-logged-body',countId:'pl-logged'},
+    '🔵 Under Review':{bodyId:'pl-review-body',countId:'pl-review'},
+    '🟠 PRD Ready':{bodyId:'pl-prd-body',countId:'pl-prd'},
+    '🟢 In Jira':{bodyId:'pl-jira-body',countId:'pl-jira'},
+    '✅ Shipped':{bodyId:'pl-shipped-body',countId:'pl-shipped'},
+  };
+  Object.values(statusMap).forEach(col => { document.getElementById(col.bodyId).innerHTML=''; document.getElementById(col.countId).textContent='0'; });
+  getFiltered().forEach(r => {
+    const col = statusMap[r.status];
+    if (!col) return;
+    const body = document.getElementById(col.bodyId);
+    const countEl = document.getElementById(col.countId);
+    countEl.textContent = parseInt(countEl.textContent)+1;
+    const card = document.createElement('div');
+    card.className = 'pipeline-card'+(isAtThreshold(r)?' threshold':'');
+    card.innerHTML = '<div class="card-title">'+r.name+'</div><div class="card-count">'+(r.count!=null&&r.count>0?r.count+' signals':'No count yet')+'</div>';
+    card.onclick = () => openDetail(r.id);
+    body.appendChild(card);
+  });
+}
+
+function render() {
+  renderStats(); renderTable(); renderPipeline();
+  document.getElementById('last-updated-label').textContent = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+function openDetail(id) {
+  const r = requests.find(x=>x.id===id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = r.id + ' — ' + r.name;
+  document.getElementById('modal-body').innerHTML =
+    '<div class="modal-field"><label>Feature name</label><input type="text" id="m-name" value="'+r.name.replace(/"/g,'&quot;')+'" /></div>'+
+    '<div style="display:flex;gap:12px;">'+
+      '<div class="modal-field" style="flex:1"><label>Request count</label><input type="number" id="m-count" value="'+(r.count!=null?r.count:'')+'" placeholder="—" min="0" /></div>'+
+      '<div class="modal-field" style="flex:1"><label>Status</label><select id="m-status">'+STATUS_ORDER.map(s=>'<option'+(r.status===s?' selected':'')+'>'+s+'</option>').join('')+'</select></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:12px;">'+
+      '<div class="modal-field" style="flex:1"><label>First logged</label><input type="text" id="m-first" value="'+(r.firstLogged||'')+'" placeholder="DD/MM/YYYY" /></div>'+
+      '<div class="modal-field" style="flex:1"><label>Last logged</label><input type="text" id="m-last" value="'+(r.lastLogged||'')+'" placeholder="DD/MM/YYYY" /></div>'+
+    '</div>'+
+    '<div class="modal-field"><label>Sources</label><div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">'+
+      ['CX','App Store','Service Desk','CS','In-app'].map(s=>'<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;"><input type="checkbox" value="'+s+'" '+((r.sources||[]).includes(s)?'checked':'')+'>'+s+'</label>').join('')+
+    '</div></div>'+
+    '<div class="modal-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;"><input type="checkbox" id="m-renewal" '+(r.renewalSignal?'checked':'')+'>CS renewal signal (threshold at 5+)</label></div>'+
+    '<div class="modal-field"><label>Notes / member quotes</label><textarea id="m-notes">'+(r.notes||'')+'</textarea></div>'+
+    '<div class="modal-field"><label>Jira link</label><input type="text" id="m-jira" value="'+(r.jiraLink||'')+'" placeholder="https://gympass.atlassian.net/…" /></div>'+
+    '<div class="modal-field"><label>PRD link</label><input type="text" id="m-prd" value="'+(r.prdLink||'')+'" placeholder="https://docs.google.com/…" /></div>'+
+    '<div class="modal-actions"><button class="btn btn-danger" onclick="deleteRequest(\''+id+'\')">Delete</button><button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button><button class="btn btn-primary" onclick="saveModal()">Save changes</button></div>';
+  document.getElementById('modal').classList.add('open');
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'New Feature Request';
+  document.getElementById('modal-body').innerHTML =
+    '<div class="modal-field"><label>Feature name</label><input type="text" id="m-name" placeholder="Describe the feature requested" /></div>'+
+    '<div style="display:flex;gap:12px;">'+
+      '<div class="modal-field" style="flex:1"><label>Request count</label><input type="number" id="m-count" placeholder="0" min="0" /></div>'+
+      '<div class="modal-field" style="flex:1"><label>Status</label><select id="m-status">'+STATUS_ORDER.map(s=>'<option>'+s+'</option>').join('')+'</select></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:12px;">'+
+      '<div class="modal-field" style="flex:1"><label>First logged</label><input type="text" id="m-first" placeholder="DD/MM/YYYY" /></div>'+
+      '<div class="modal-field" style="flex:1"><label>Last logged</label><input type="text" id="m-last" placeholder="DD/MM/YYYY" /></div>'+
+    '</div>'+
+    '<div class="modal-field"><label>Sources</label><div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">'+
+      ['CX','App Store','Service Desk','CS','In-app'].map(s=>'<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:500;"><input type="checkbox" value="'+s+'">'+s+'</label>').join('')+
+    '</div></div>'+
+    '<div class="modal-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;"><input type="checkbox" id="m-renewal">CS renewal signal (threshold at 5+)</label></div>'+
+    '<div class="modal-field"><label>Notes / member quotes</label><textarea id="m-notes" placeholder="Paste quotes, ticket refs, or context"></textarea></div>'+
+    '<div class="modal-field"><label>Jira link</label><input type="text" id="m-jira" placeholder="https://gympass.atlassian.net/…" /></div>'+
+    '<div class="modal-field"><label>PRD link</label><input type="text" id="m-prd" placeholder="https://docs.google.com/…" /></div>'+
+    '<div class="modal-actions"><button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button><button class="btn btn-primary" onclick="saveModal()">Add request</button></div>';
+  document.getElementById('modal').classList.add('open');
+}
+
+function saveModal() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { alert('Feature name is required'); return; }
+  const countRaw = document.getElementById('m-count').value;
+  const count = countRaw !== '' ? parseInt(countRaw) : null;
+  const sources = [...document.querySelectorAll('#modal-body input[type=checkbox][value]')].filter(c=>c.checked).map(c=>c.value);
+  const data = { name, count,
+    firstLogged: document.getElementById('m-first').value.trim(),
+    lastLogged: document.getElementById('m-last').value.trim(),
+    sources, status: document.getElementById('m-status').value,
+    renewalSignal: document.getElementById('m-renewal').checked,
+    notes: document.getElementById('m-notes').value.trim(),
+    jiraLink: document.getElementById('m-jira').value.trim(),
+    prdLink: document.getElementById('m-prd').value.trim(),
+  };
+  if (editingId) {
+    const idx = requests.findIndex(r=>r.id===editingId);
+    requests[idx] = { ...requests[idx], ...data };
+  } else {
+    const nextId = 'FR-' + String(requests.length+1).padStart(3,'0');
+    requests.push({ id: nextId, ...data });
+  }
+  save(); closeModalDirect(); render();
+}
+
+function deleteRequest(id) {
+  if (!confirm('Delete this request?')) return;
+  requests = requests.filter(r=>r.id!==id);
+  save(); closeModalDirect(); render();
+}
+
+function closeModal(e) { if (e.target===document.getElementById('modal')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modal').classList.remove('open'); editingId=null; }
+
+function syncFromJira() {
+  const banner = document.getElementById('sync-banner');
+  const status = document.getElementById('sync-status');
+  const btn = document.getElementById('sync-btn');
+  banner.style.display = 'block';
+  btn.disabled = true;
+  const steps = ['Querying Jira NVT for labeled tickets…','Checking Won\'t Fix / Not a Bug resolutions…','Classifying tickets against registry…','Updating counts and dates…'];
+  let i = 0; status.textContent = steps[i];
+  const interval = setInterval(() => {
+    i++;
+    if (i < steps.length) { status.textContent = steps[i]; }
+    else {
+      clearInterval(interval);
+      status.textContent = '⚠️ Atlassian currently unavailable. When Jira is back up, say: "Run the Trainiac historical Jira export and populate the feature request registry."';
+      btn.disabled = false; btn.textContent = '⟳ Retry Sync';
+    }
+  }, 900);
+}
+
+render();
+</script>
+</body>
+</html>
