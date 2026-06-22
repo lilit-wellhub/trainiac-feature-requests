@@ -114,7 +114,8 @@ The Jira leg of intake is **fully automated** via a scheduled Claude task that r
 |--------|-----------|------------|
 | **CX** | Customer support tickets in Jira (projects: `TBT`, `MAIN`, `NVT`) | ✅ Weekly — scheduled task |
 | **Service Desk** | Trainer tickets in Jira NVT | ✅ Weekly — scheduled task |
-| **App Store** | iOS App Store and Google Play reviews | Manual — monthly sweep, log via + Add request |
+| **App Store** | iOS App Store reviews (app ID: 1244920288) | ✅ Weekly — Apple RSS feed, up to 10 pages |
+| **Google Play** | Android reviews (package: `fit.trainiac.android.client`) | ✅ Weekly — Play Store page scrape |
 | **CS** | Renewal signals from CS team (Slack / Salesforce) | Manual — log via + Add request when flagged |
 
 ### Automated Jira sync (every Monday 09:00)
@@ -145,11 +146,9 @@ Each ticket is matched to an existing FR by keyword similarity. Matched tickets 
 
 A sync log is appended to `sync-log.md` in this folder after each run.
 
-### Manual intake (App Store + CS)
+### Manual intake (CS only)
 
-For App Store reviews: do a monthly keyword search in App Store Connect / Google Play Console, then click **+ Add request** on the dashboard to log new signals or increment counts on existing FRs.
-
-For CS signals: when the CS team flags a renewal risk in Slack, log it via **+ Add request** and tick the **CS renewal signal** checkbox (lowers threshold to 5+).
+CS renewal signals are the one source that can't be scraped — they come from conversation context in Slack or Salesforce. When the CS team flags a renewal risk, log it via **+ Add request** and tick the **CS renewal signal** checkbox (lowers the threshold to 5+).
 3. Increment `count` and update `lastLogged` for matched FRs
 4. Surface unmatched tickets as draft entries for PM review
 5. Flag any FRs that crossed the threshold since the last sync
