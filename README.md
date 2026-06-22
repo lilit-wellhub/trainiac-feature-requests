@@ -127,20 +127,22 @@ The scheduled task (`trainiac-fr-sync`) runs four JQL queries:
 project = NVT AND labels in ("trainiac-feature-request","trainiac-feature-request-wontfix") ORDER BY created ASC
 ```
 
-**Query B — Won't Fix / Not a Bug resolutions in NVT**
+**Query B — Won't Fix / Not a Bug resolutions in TBT**
 ```
-project = NVT AND resolution in ("Won't Fix","Not a Bug","Works as Designed","By Design") AND labels not in ("trainiac-feature-request","trainiac-feature-request-wontfix") ORDER BY created ASC
-```
-
-**Query C — Trainiac CX tickets across TBT/MAIN**
-```
-project in (TBT,MAIN) AND text ~ "trainiac" ORDER BY created ASC
+project = TBT AND resolution in ("Won't Fix","Not a Bug","Works as Designed","By Design") ORDER BY created ASC
 ```
 
-**Query D — keyword scan for untagged FRs**
+**Query C — Trainiac mentions in MAIN**
 ```
-project = NVT AND (summary ~ "wish" OR summary ~ "would be great" OR summary ~ "feature request" OR summary ~ "please add" OR summary ~ "can you add") ORDER BY created ASC
+project = MAIN AND text ~ "trainiac" ORDER BY created ASC
 ```
+
+**Query D — keyword scan for untagged FRs in TBT**
+```
+project = TBT AND (summary ~ "wish" OR summary ~ "would be great" OR summary ~ "feature request" OR summary ~ "please add" OR summary ~ "can you add") ORDER BY created ASC
+```
+
+> NVT is an internal team project and is not queried.
 
 Each ticket is matched to an existing FR by keyword similarity. Matched tickets increment `count` and update `lastLogged`. Unmatched tickets with 2+ signals clustering around the same theme are added as new `🟡 Logged` entries. Results are pushed to GitHub and the live dashboard updates within ~60 seconds.
 
@@ -149,9 +151,6 @@ A sync log is appended to `sync-log.md` in this folder after each run.
 ### Manual intake (CS only)
 
 CS renewal signals are the one source that can't be scraped — they come from conversation context in Slack or Salesforce. When the CS team flags a renewal risk, log it via **+ Add request** and tick the **CS renewal signal** checkbox (lowers the threshold to 5+).
-3. Increment `count` and update `lastLogged` for matched FRs
-4. Surface unmatched tickets as draft entries for PM review
-5. Flag any FRs that crossed the threshold since the last sync
 
 ---
 
