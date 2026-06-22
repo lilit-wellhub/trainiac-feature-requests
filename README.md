@@ -106,62 +106,50 @@ Click any row to open the edit modal. From there you can also delete the request
 
 ## How new requests are sourced
 
-Feature requests are not automatically scraped — they are discovered across four signal sources and logged manually (or with Claude's help) into the dashboard. The **⟳ Sync Jira** button in the header will eventually automate the Jira leg of this; it is currently a stub.
+The Jira leg of intake is **fully automated** via a scheduled Claude task that runs every Monday at 09:00. It queries Jira, updates counts and dates, adds newly clustered FRs, and pushes the updated dashboard to GitHub — no manual steps required. App Store and CS signals are still logged manually via the **+ Add request** button.
 
 ### Signal sources
 
-| Source | What it is | How to check |
-|--------|-----------|--------------|
-| **CX** | Customer support tickets in Jira (projects: `TBT`, `MAIN`, `NVT`) | Run JQL queries (see below) or review weekly CX digest |
-| **App Store** | iOS App Store and Google Play reviews | Manually reviewed in App Store Connect / Google Play Console; filter by keyword |
-| **Service Desk** | Internal support tickets from trainers via the Trainiac Service Desk | Reviewed in Jira Service Desk; look for "feature request" or "wish" tags |
-| **CS** | Commercial / Customer Success signals from renewal calls and account reviews | CS team flags in Slack or Salesforce; PM reviews monthly |
+| Source | What it is | Automated? |
+|--------|-----------|------------|
+| **CX** | Customer support tickets in Jira (projects: `TBT`, `MAIN`, `NVT`) | ✅ Weekly — scheduled task |
+| **Service Desk** | Trainer tickets in Jira NVT | ✅ Weekly — scheduled task |
+| **App Store** | iOS App Store and Google Play reviews | Manual — monthly sweep, log via + Add request |
+| **CS** | Renewal signals from CS team (Slack / Salesforce) | Manual — log via + Add request when flagged |
 
-### JQL queries for Jira scraping
+### Automated Jira sync (every Monday 09:00)
 
-Run these in `gympass.atlassian.net` to surface unlogged feature requests:
+The scheduled task (`trainiac-fr-sync`) runs four JQL queries:
 
-**Query A — explicitly labeled FRs (NVT project)**
+**Query A — labeled FRs in NVT**
 ```
 project = NVT AND labels in ("trainiac-feature-request","trainiac-feature-request-wontfix") ORDER BY created ASC
 ```
 
-**Query B — Won't Fix / Not a Bug resolutions (potential missed FRs)**
+**Query B — Won't Fix / Not a Bug resolutions in NVT**
 ```
 project = NVT AND resolution in ("Won't Fix","Not a Bug","Works as Designed","By Design") AND labels not in ("trainiac-feature-request","trainiac-feature-request-wontfix") ORDER BY created ASC
 ```
 
-**Query C — keyword search across TBT and MAIN (historical CX tickets)**
+**Query C — Trainiac CX tickets across TBT/MAIN**
 ```
-project in (TBT,MAIN) AND text ~ "apple health" ORDER BY created ASC
+project in (TBT,MAIN) AND text ~ "trainiac" ORDER BY created ASC
 ```
-Swap `"apple health"` for any feature keyword. This was used to find the 14 pre-ship CX tickets for FR-020.
 
 **Query D — keyword scan for untagged FRs**
 ```
 project = NVT AND (summary ~ "wish" OR summary ~ "would be great" OR summary ~ "feature request" OR summary ~ "please add" OR summary ~ "can you add") ORDER BY created ASC
 ```
 
-### Intake process (manual)
+Each ticket is matched to an existing FR by keyword similarity. Matched tickets increment `count` and update `lastLogged`. Unmatched tickets with 2+ signals clustering around the same theme are added as new `🟡 Logged` entries. Results are pushed to GitHub and the live dashboard updates within ~60 seconds.
 
-1. **Weekly:** scan the CX digest or run Query A/D above — look for recurring themes
-2. **When a new theme appears:** check if an FR already exists in the dashboard; if yes, increment `count` and update `lastLogged`; if no, click **+ Add request** and create a new entry
-3. **Threshold check:** if `count` reaches 10 (or 5 with CS renewal signal), the dashboard flags it automatically — update the status to 🟠 PRD Ready and start a PRD within 5 business days
-4. **App Store sweep:** do a monthly keyword search in App Store Connect and Google Play for new reviews mentioning missing features — add to relevant FR or create new
+A sync log is appended to `sync-log.md` in this folder after each run.
 
-### Intake process (with Claude)
+### Manual intake (App Store + CS)
 
-For a bulk backfill or historical audit, say:
+For App Store reviews: do a monthly keyword search in App Store Connect / Google Play Console, then click **+ Add request** on the dashboard to log new signals or increment counts on existing FRs.
 
-> "Run the Trainiac historical Jira export and populate the feature request registry — use the Atlassian MCP to query NVT with the JQL queries in `jira-historical-export-runner.md`"
-
-Claude will query Jira via the Atlassian MCP, group tickets by theme, deduplicate, count signals per FR, and update the dashboard seed data directly. Full instructions: `~/Downloads/course-materials/your-work/comms/jira-historical-export-runner.md`
-
-### What the Sync Jira button will do (when wired up)
-
-The **⟳ Sync Jira** button currently simulates a sync. When the Atlassian MCP token is connected server-side, it will:
-1. Query `NVT` for all labeled FRs and new Won't Fix resolutions
-2. Match each ticket to an existing dashboard FR by keyword similarity
+For CS signals: when the CS team flags a renewal risk in Slack, log it via **+ Add request** and tick the **CS renewal signal** checkbox (lowers threshold to 5+).
 3. Increment `count` and update `lastLogged` for matched FRs
 4. Surface unmatched tickets as draft entries for PM review
 5. Flag any FRs that crossed the threshold since the last sync
